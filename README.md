@@ -3,6 +3,9 @@
 ## Overview
 Client-side web JavaScript app integrating Facebook event feeds with YouTube videos
 
+## Demo video
+https://youtu.be/dG6Qo8vQJC0
+
 ## Getting started
 
 * Create an S3 bucket

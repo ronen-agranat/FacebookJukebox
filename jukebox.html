@@ -23,6 +23,9 @@
         });
       }
 
+      ////////////////////////
+      // Facebook SDK
+      //
       window.fbAsyncInit = function() {
         FB.init({
           appId: '165909600499650', // jukebox-prototype
@@ -33,11 +36,6 @@
 
         checkLoginState();
       };
-
-      ////////////////////////
-      // Facebook Login
-      //
-
       (function(d, s, id) {
         var js, fjs = d.getElementsByTagName(s)[0];
         if (d.getElementById(id)) return;
@@ -45,19 +43,18 @@
         js.src = "//connect.facebook.net/en_US/sdk.js";
         fjs.parentNode.insertBefore(js, fjs);
       }(document, 'script', 'facebook-jssdk'));
-      // 2. This code loads the IFrame Player API code asynchronously.
-      var tag = document.createElement('script');
 
+      ////////////////////////
+      // YouTube SDK
+      //
+      var tag = document.createElement('script');
       tag.src = "https://www.youtube.com/iframe_api";
       var firstScriptTag = document.getElementsByTagName('script')[0];
       firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-      ////////////////////////
-      // YouTube player
-      //
+      var player; // Global YouTube player instance
+      var videoQueue = []; // Global video playlist consisting of string video IDs
 
-      var player;
-      var videoQueue = [];
       function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
           height: '390',
@@ -71,7 +68,7 @@
         });
       }
       function onPlayerReady(event) {
-        event.target.playVideo();
+        event.target.playVideo(); // auto-play video
       }
       function onPlayerStateChange(event) {
         //if (event.data == YT.PlayerState.PLAYING && !done) {
@@ -163,16 +160,6 @@
                         $('#content').append($feedItem);
                         $('#content').append('<br>');
 
-                        /*
-                        if (videoQueue.length === 0) {
-                          console.log('Playing video ' + videoUrl)
-                          player.loadVideoByUrl(videoUrl);
-                        } else {
-                          console.log('Queueing video ' + videoUrl)
-                          player.cueVideoByUrl(videoUrl);
-                        }
-                        */
-
                         videoQueue.push(videoId);
                       }
                     }
@@ -191,22 +178,14 @@
     <div id='fb_login'>
       <fb:login-button scope="public_profile,email,user_events" onlogin="checkLoginState();"></fb:login-button>
     </div>
-
     <div id="status"></div>
-
-    <div id='content'>
-    </div>
-
-    <!-- 1. The <iframe> (and video player) will replace this <div> tag. -->
+    <div id='content'></div>
     <div id="player"></div>
-
-    <br />
-    <br />
-
+    <br>
+    <br>
     <div class="fb-like" data-share="true" data-width="450" data-show-faces="true"></div>
-
-    <br />
-    <br />
+    <br>
+    <br>
     <div>
       Ronen Agranat 2016
     </div>

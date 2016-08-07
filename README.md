@@ -6,6 +6,9 @@ Client-side web JavaScript app integrating Facebook event feeds with YouTube vid
 ## Demo video
 https://youtu.be/dG6Qo8vQJC0
 
+## Live demo endpoint
+http://ronen-agranat-jukebox-prototype.s3-website-eu-west-1.amazonaws.com/
+
 ## Getting started
 
 * Create an S3 bucket

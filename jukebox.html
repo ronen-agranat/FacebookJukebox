@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Facebook Jukebox Prototype</title>
+    <meta charset="UTF-8">
+    <script src='https://code.jquery.com/jquery-3.1.0.min.js'></script>
+  </head>
+  <body>
+    <script>
+      function checkLoginState() {
+        FB.getLoginStatus(function(response) {
+          if (response.status === 'connected') {
+            FB.api('/me', function(response) {
+              $('#fb_login').hide();
+              main();
+            });
+          }
+          else if (response.status === 'not_authorized') {
+            $('#status').html('Please authorize this app via Facebook.');
+          } else {
+            $('#status').html('Please log into Facebook.');
+          }
+        });
+      }
+
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId: '165909600499650', // jukebox-prototype
+          cookie: true,
+          xfbml: true,
+          version: 'v2.7'
+        });
+
+        checkLoginState();
+      };
+
+      ////////////////////////
+      // Facebook Login
+      //
+
+      (function(d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s); js.id = id;
+        js.src = "//connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+      }(document, 'script', 'facebook-jssdk'));
+      // 2. This code loads the IFrame Player API code asynchronously.
+      var tag = document.createElement('script');
+
+      tag.src = "https://www.youtube.com/iframe_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+      ////////////////////////
+      // YouTube player
+      //
+
+      var player;
+      var videoQueue = [];
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+          height: '390',
+          width: '640',
+          // TODO cue up instructional video
+          //videoId: 'M7lc1UVf-VE',
+          events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+          }
+        });
+      }
+      function onPlayerReady(event) {
+        event.target.playVideo();
+      }
+      function onPlayerStateChange(event) {
+        //if (event.data == YT.PlayerState.PLAYING && !done) {
+        //  setTimeout(stopVideo, 6000);
+        //  done = true;
+        //}
+      }
+      function stopVideo() {
+        player.stopVideo();
+      }
+
+      function main() {
+        FB.api(
+            "/me/events",
+            function (response) {
+              if (response && !response.error) {
+                // Render events view
+                $('#content').append("<h2>Choose event:</h2>");
+
+                $.each(response.data, function (index, value) {
+                  var event = value;
+                  var name = event.name;
+                  var description = event.description;
+                  var id = event.id;
+
+                  var $link = $('<div><b><a href="javascript:void(0);"></a></b>&nbsp;<span></span></div>');
+                  $link.find('a').text(name).click(function (e) {
+                    getFeedForEventWithId(id, name, description);
+                  });
+
+                  // FIXME 50 at most -- need a truncate function
+                  $link.find('span').text(description.substring(0, 50));
+
+                  $('#content').append($link);
+                });
+              }
+            }
+        );
+
+        // TODO pass in struct
+        function getFeedForEventWithId(id, name, description) {
+          FB.api(
+              id + "/feed",
+              function (response) {
+                function extractVideoId(videoUrl) {
+                  console.log('testing ' + videoUrl);
+                  // Extract first video id
+                  matches = videoUrl.match(/v=([A-z0-9]+)/);
+
+                  if (matches) {
+                    return matches[1];
+                  } else {
+                    return null;
+                  }
+                }
+
+                function buildVideoUrl(videoId) {
+                  if (videoId === undefined) {
+                    throw 'Cannot build video URL for null video id';
+                  }
+
+                  // e.g. http://www.youtube.com/v/r7UKu8s84S0&list?version=3
+                  return "http://www.youtube.com/v/" + videoId + "?version=3";
+                }
+
+                // TODO formalise response and error handling
+                if (response && !response.error) {
+                  // Process returned feed items
+
+                  $('#content').html("<h2></h2>");
+                  $('#content').find('h2').text('Event: ' + name);
+
+                  $descriptionDiv = $('<div></div>').text(description);
+                  $('#content').append($descriptionDiv);
+                  $('#content').append('<br><br>');
+
+                  $.each(response.data, function (index, value) {
+                    // Render feed item
+                    var feedItem = value;
+
+                    if (feedItem.message !== undefined) {
+                      var message = feedItem.message;
+
+                      var videoId = extractVideoId(message);
+                      if (videoId) {
+                        var videoUrl = buildVideoUrl(videoId);
+                        // TODO Show name of video
+                        $feedItem = $('<a></a>').attr('href', videoUrl).text(videoUrl);
+                        $('#content').append($feedItem);
+                        $('#content').append('<br>');
+
+                        /*
+                        if (videoQueue.length === 0) {
+                          console.log('Playing video ' + videoUrl)
+                          player.loadVideoByUrl(videoUrl);
+                        } else {
+                          console.log('Queueing video ' + videoUrl)
+                          player.cueVideoByUrl(videoUrl);
+                        }
+                        */
+
+                        videoQueue.push(videoId);
+                      }
+                    }
+
+                    player.loadPlaylist(videoQueue);
+                  });
+                }
+              }
+          );
+        }
+      }
+    </script>
+
+    <h1>Facebook Jukebox Prototype</h1>
+
+    <div id='fb_login'>
+      <fb:login-button scope="public_profile,email,user_events" onlogin="checkLoginState();"></fb:login-button>
+    </div>
+
+    <div id="status"></div>
+
+    <div id='content'>
+    </div>
+
+    <!-- 1. The <iframe> (and video player) will replace this <div> tag. -->
+    <div id="player"></div>
+
+    <br />
+    <br />
+
+    <div class="fb-like" data-share="true" data-width="450" data-show-faces="true"></div>
+
+    <br />
+    <br />
+    <div>
+      Ronen Agranat 2016
+    </div>
+  </body>
+</html>

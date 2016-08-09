@@ -73,11 +73,23 @@
       }
 
       function main() {
+        if (localStorage.currentEventId !== undefined) {
+          facebookEvent = {
+            id: localStorage.currentEventId,
+            name: localStorage.currentEventName,
+            description: localStorage.currentEventDescription
+          };
+          getFeedForEvent(facebookEvent);
+          return;
+        }
+
         FB.api(
             "/me/events",
             function (response) {
               if (response && !response.error) {
+                ////////////////////////
                 // Render events view
+                //
                 $('#content').append("<h2>Choose event:</h2>");
 
                 $.each(response.data, function (index, value) {
@@ -88,7 +100,22 @@
 
                   var $link = $('<div><b><a href="javascript:void(0);"></a></b>&nbsp;<span></span></div>');
                   $link.find('a').text(name).click(function (e) {
-                    getFeedForEventWithId(id, name, description);
+                    ////////////////////////
+                    // On event clicked
+                    //
+
+                    var facebookEvent = {
+                      id: id,
+                      name: name,
+                      description: description
+                    };
+
+                    getFeedForEvent(facebookEvent);
+
+                    // Cache in local storage
+                    localStorage.currentEventId = id;
+                    localStorage.currentEventName = name;
+                    localStorage.currentEventDescription = description;
                   });
 
                   // FIXME 50 at most -- need a truncate function
@@ -100,8 +127,14 @@
             }
         );
 
-        // TODO pass in struct
-        function getFeedForEventWithId(id, name, description) {
+        // @option name [String]
+        // @option description [String]
+        // @option id [String]
+        function getFeedForEvent(facebookEvent) {
+          var name = facebookEvent.name;
+          var description = facebookEvent.description;
+          var id = facebookEvent.id;
+
           FB.api(
               id + "/feed",
               function (response) {

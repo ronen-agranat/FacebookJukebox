@@ -4,9 +4,30 @@
     <title>Facebook Jukebox Prototype</title>
     <meta charset="UTF-8">
     <script src='https://code.jquery.com/jquery-3.1.0.min.js'></script>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+      ////////////////////////
+      // YouTube API
+      //
+      function gapiInit() {
+        // Browser key -- linked to originating URL. safe to share
+        gapi.client.setApiKey('AIzaSyDrHu-grzTnbAcInBgXBePSRD8y5JK2nxw');
+        gapi.client.load('youtube', 'v3');
+      }
+      gapi.load('client', gapiInit);
+    </script>
   </head>
   <body>
     <script>
+      ////////////////////////
+      // Facebook SDK
+      //
       function checkLoginState() {
         FB.getLoginStatus(function(response) {
           if (response.status === 'connected') {
@@ -22,10 +43,6 @@
           }
         });
       }
-
-      ////////////////////////
-      // Facebook SDK
-      //
       window.fbAsyncInit = function() {
         FB.init({
           appId: '165909600499650', // jukebox-prototype
@@ -149,15 +166,6 @@
                   }
                 }
 
-                function buildVideoUrl(videoId) {
-                  if (videoId === undefined) {
-                    throw 'Cannot build video URL for null video id';
-                  }
-
-                  // e.g. http://www.youtube.com/v/r7UKu8s84S0&list?version=3
-                  return "http://www.youtube.com/v/" + videoId + "?version=3";
-                }
-
                 // TODO formalise response and error handling
                 if (response && !response.error) {
                   // Process returned feed items
@@ -178,18 +186,28 @@
 
                       var videoId = extractVideoId(message);
                       if (videoId) {
-                        var videoUrl = buildVideoUrl(videoId);
-                        // TODO Show name of video
-                        $feedItem = $('<a></a>').attr('href', videoUrl).text(videoUrl);
-                        $('#content').append($feedItem);
-                        $('#content').append('<br>');
-
                         videoQueue.push(videoId);
                       }
                     }
-
-                    window.player.loadPlaylist(videoQueue);
                   });
+
+                  gapi.client.youtube.videos.list({
+                    part: 'snippet',
+                    id: videoQueue.join(',')
+                  }).then(function (response) {
+                    var items = response.result.items;
+
+                    $.each(items, function (index, value) {
+                      var snippet = value.snippet;
+
+                      $feedItem = $('<a><span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span><b></b></a>');
+                      $feedItem.find('b').text(snippet.title);
+                      $('#content').append($feedItem);
+                      $('#content').append('<br>');
+                    });
+                  });
+
+                  window.player.loadPlaylist(videoQueue);
                 }
               }
           );
